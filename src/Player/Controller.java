@@ -1,62 +1,64 @@
 package Player;
 
+import javafx.animation.RotateTransition;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
+import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-
-
-//TODO LIST
-//FIX BUG NEXT MEDIA/ PREV MEDIA VIDEO CRASH
-//ADD AUTO-ROTATE ON PLAY
-//SAVE MEDIA THAT WAS PLAYED, LAST TIME PLAYER WAS USED
-//MAKE SURE THE PROGRAM LOADS MEDIA WITHOUT TOO MUCH DELA (TRY LOADING MEDIA IN DIFFERENT THREADS)
-
-//TODO TEST-LIST
-//TEST IF APP IS ABLE TO RUN WITHOUT RUNNING STUCK
-//TEST ALL THE BUTTONS
-//TEST IF ALL TEH FUNCTIONALITY WORKS AS INTENDED
-
-//NOTES
-//Synchronize to sync threads for shared data
 public class Controller{
     @FXML private GridPane mViewPane;
     @FXML private MediaView mView;
+    @FXML private MediaView mediaView;
     @FXML private TextField text;
-    @FXML private Slider seekSlider;
+    @FXML private Slider progressSlider;
     @FXML private ListView mInfo;
+    @FXML private Label progressShowLabel;
+    @FXML private Pane mViewContainer;
     private MediaPlayer mPlayer;
     private ObservableList<Media> mList;
     private int bookMark;
-    private boolean active;
     private MediaOrganizer mediaOrganizer;
+    private boolean active;
+    private boolean isDragged;
+    private Duration mFileDuration;
+    private ProgressionBar progressionBar;
 
     public void initialize(){
         mediaOrganizer = new MediaOrganizer();
         active = false;
+        isDragged = false;
         Stage mainStage = Main.mainStage;
 
         //Height listener to modify mediaView size according to parent
         mainStage.heightProperty().addListener((observable, oldVal, newVal)->{
-            mViewPane.setPrefHeight(Main.mainStage.getHeight()-37);
-            mView.setFitHeight(Main.mainStage.getHeight()*90/100);
+            mViewPane.setMaxHeight(newVal.doubleValue());
+            //mViewPane.setPrefHeight(Main.mainStage.getHeight()-37);
+            mViewPane.setPrefHeight(newVal.doubleValue());
+            //mView.setFitHeight(Main.mainStage.getHeight()*90/100);
+            mViewContainer.setPrefHeight(newVal.doubleValue()*90/100);
+            mView.setFitHeight(mViewContainer.getHeight());
         });
         //Width listener to modify mediaView size according to parent
         //This is what fixed the overlap issues (Video cut from areas)
         mainStage.widthProperty().addListener((observable, oldVal, newVal)->{
-            mViewPane.setPrefWidth(Main.mainStage.getWidth()*75/100);
-            mView.setFitWidth(mViewPane.getWidth()*70/100);
+            mViewPane.setMaxWidth(newVal.doubleValue());
+            //mViewPane.setPrefWidth(Main.mainStage.getWidth()*75/100);
+            mViewPane.setPrefWidth(newVal.doubleValue());
+            //mView.setFitWidth(mViewPane.getWidth()*70/100);
+            mViewContainer.setPrefWidth(newVal.doubleValue()*75/100);
+            mView.setFitWidth(newVal.doubleValue()*75/100);
         });
     }
     //Call file search from MediaOrganizer and setup media
@@ -68,33 +70,20 @@ public class Controller{
                 System.out.println("mList contents cleared.");
             }
             mInfo.getItems().removeAll();
-            //mInfo.getItems().clear();
             mList = mediaOrganizer.openMedia();
             mInfo.getItems().addAll(mList);
 
             if (mPlayer == null){
                 bookMark = 0;
                 createMediaPlayer();
+//                rotate.setAngle(180);
+//                rotate.setPivotX(200);
+//                rotate.setPivotY(100);
+//                System.out.println(mView.getBoundsInParent());
+//                System.out.println(mView.getTransforms());
+//                mView.getTransforms().add(rotate);
             }
         }catch(RuntimeException e){
-            e.printStackTrace();
-        }
-    }
-    //Create seek bar
-    public void createSeekBar(){
-        try{
-
-            mPlayer.currentTimeProperty().addListener((observable, newVal, oldVal)->{
-                //System.out.println("current time property: "+((mPlayer.getTotalDuration().toMillis() / 100) * mPlayer.getCurrentTime().toMillis()));
-                System.out.println("Seek slider placeholder = "+(mPlayer.getCurrentTime().toMillis()/mPlayer.getTotalDuration().toMillis())*100);
-                seekSlider = new Slider();
-                double mediaDuration = mPlayer.getCycleDuration().toMillis();
-                seekSlider.valueProperty().setValue((mPlayer.getCurrentTime().toMillis()/mediaDuration) * 100);
-                seekSlider.setValue(0.6);
-                //seekSlider.setValue((mediaDuration / mPlayer.getCurrentTime().toMillis()) * 100);
-            });
-            System.out.println(mPlayer.getCurrentTime());
-        }catch(Exception e){
             e.printStackTrace();
         }
     }
@@ -109,11 +98,9 @@ public class Controller{
             }
             else{
                 bookMark = 0;
-                mPlayer.stop();
                 disposeMediaPlayer();
                 createMediaPlayer();
             }
-            mPlayer = new MediaPlayer(mList.get(bookMark));
         }
     }
     //Previous media file
@@ -130,38 +117,35 @@ public class Controller{
                 disposeMediaPlayer();
                 createMediaPlayer();
             }
-            mPlayer = new MediaPlayer(mList.get(bookMark));
         }
     }
     //Create media player
     private void createMediaPlayer(){
-        active = true;
         mPlayer = new MediaPlayer(mList.get(bookMark));
         mView.setMediaPlayer(mPlayer);
         mPlayer.onReadyProperty().setValue(()-> {
+            active = true;
             playMedia();
             System.out.println((String)mList.get(bookMark).getMetadata().get("title"));
-            Thread thread = new Thread(new MediaBufferThread());
-            createSeekBar();
+            //Thread thread = new Thread(new MediaBufferThread());
+            mFileDuration = mPlayer.getMedia().getDuration();
+//            progressionBar = new ProgressionBar("mediaProgressionBar", mPlayer, progressSlider,
+//                    progressShowLabel, mFileDuration);
         });
-
-        //createSeekBar();
-        //System.out.println("create");
     }
     //Dispose of media player
     private void disposeMediaPlayer(){
-        active = false;
         mPlayer.dispose();
+        active = false;
         //System.out.println("dispose");
     }
     //Play media
     //Functionality for "play" button
     public void playMedia(){
-        if(active){
-            try{
-
+        if(active) {
+            try {
                 mPlayer.play();
-            }catch(Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -189,3 +173,6 @@ public class Controller{
         return mPlayer;
     }
 }
+
+
+
