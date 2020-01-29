@@ -126,7 +126,7 @@ public class Controller{
             mInfo.getItems().clear();
             for (int i = 0; i < mList.size(); i++){
 
-                //Interactive list in progress
+                //Interactive list in progress==================================================
                 Media mediaFile = mList.get(i);
                 if(mediaFile.getMetadata().get("title") == null){
                     mInfo.getItems().add("No track info");
@@ -135,32 +135,22 @@ public class Controller{
                     mInfo.getItems().add(mediaFile.getMetadata().get("title"));
                 }
 
-
-                mInfo.selectionModelProperty().addListener((observable, oldVal, newVal) -> {
-                    System.out.println(newVal);
-                });
-                //mInfo.setOnMouseClicked(mouseEvent -> System.out.println(mInfo.selectionModelProperty().));
-                mInfo.setCellFactory(anonClass->{
-                    ListView
-                    System.out.println("ss");
-                    return null;
-                });
-                mInfo.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
-                    @Override
-                    public ListCell<String> call(ListView<String> listView) {
-                        ListCell<String> cell = new ListCell<String>(){
-                            @Override
-                            protected void updateItem(String songName, boolean empty){
-                                super.updateItem(songName, empty);
-                            }
-                        };
-
-
-                        return null;
-                    }
-                });
+//                mInfo.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+//                    @Override
+//                    public ListCell<String> call(ListView<String> listView) {
+//                        ListCell<String> cell = new ListCell<String>(){
+//                            @Override
+//                            protected void updateItem(String songName, boolean empty){
+//                                super.updateItem(songName, empty);
+//                            }
+//                        };
+//
+//
+//                        return null;
+//                    }
+//                });
             }
-
+            //==================================================================================
             mFileDuration = mPlayer.getMedia().getDuration();
             progressionBar = new ProgressionBar("mediaProgressionBar", mPlayer, progressSlider,
                     progressShowLabel, mFileDuration);
