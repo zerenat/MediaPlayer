@@ -1,31 +1,31 @@
 package Player;
 
-import javafx.animation.RotateTransition;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Slider;
-import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
-import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import javafx.util.Duration;
 
 public class Controller{
     @FXML private GridPane mViewPane;
     @FXML private MediaView mView;
-    @FXML private MediaView mediaView;
-    @FXML private TextField text;
     @FXML private Slider progressSlider;
     @FXML private ListView mInfo;
     @FXML private Label progressShowLabel;
     @FXML private Pane mViewContainer;
+
     private MediaPlayer mPlayer;
     private ObservableList<Media> mList;
     private int bookMark;
@@ -34,19 +34,21 @@ public class Controller{
     private boolean isDragged;
     private Duration mFileDuration;
     private ProgressionBar progressionBar;
+    private Stage mainStage;
+
+    public Controller(){}
 
     public void initialize(){
+
         mediaOrganizer = new MediaOrganizer();
         active = false;
         isDragged = false;
-        Stage mainStage = Main.mainStage;
+        mainStage = Main.mainStage;
 
         //Height listener to modify mediaView size according to parent
         mainStage.heightProperty().addListener((observable, oldVal, newVal)->{
             mViewPane.setMaxHeight(newVal.doubleValue());
-            //mViewPane.setPrefHeight(Main.mainStage.getHeight()-37);
             mViewPane.setPrefHeight(newVal.doubleValue());
-            //mView.setFitHeight(Main.mainStage.getHeight()*90/100);
             mViewContainer.setPrefHeight(newVal.doubleValue()*90/100);
             mView.setFitHeight(mViewContainer.getHeight());
         });
@@ -54,12 +56,11 @@ public class Controller{
         //This is what fixed the overlap issues (Video cut from areas)
         mainStage.widthProperty().addListener((observable, oldVal, newVal)->{
             mViewPane.setMaxWidth(newVal.doubleValue());
-            //mViewPane.setPrefWidth(Main.mainStage.getWidth()*75/100);
             mViewPane.setPrefWidth(newVal.doubleValue());
-            //mView.setFitWidth(mViewPane.getWidth()*70/100);
             mViewContainer.setPrefWidth(newVal.doubleValue()*75/100);
             mView.setFitWidth(newVal.doubleValue()*75/100);
         });
+        mView.setX(5);
     }
     //Call file search from MediaOrganizer and setup media
     public void mediaSetup() throws RuntimeException{
@@ -71,17 +72,12 @@ public class Controller{
             }
             mInfo.getItems().removeAll();
             mList = mediaOrganizer.openMedia();
-            mInfo.getItems().addAll(mList);
+
+            //mInfo.getItems().addAll(mList);
 
             if (mPlayer == null){
                 bookMark = 0;
                 createMediaPlayer();
-//                rotate.setAngle(180);
-//                rotate.setPivotX(200);
-//                rotate.setPivotY(100);
-//                System.out.println(mView.getBoundsInParent());
-//                System.out.println(mView.getTransforms());
-//                mView.getTransforms().add(rotate);
             }
         }catch(RuntimeException e){
             e.printStackTrace();
@@ -126,18 +122,54 @@ public class Controller{
         mPlayer.onReadyProperty().setValue(()-> {
             active = true;
             playMedia();
-            System.out.println((String)mList.get(bookMark).getMetadata().get("title"));
-            //Thread thread = new Thread(new MediaBufferThread());
+
+            mInfo.getItems().clear();
+            for (int i = 0; i < mList.size(); i++){
+
+                //Interactive list in progress
+                Media mediaFile = mList.get(i);
+                if(mediaFile.getMetadata().get("title") == null){
+                    mInfo.getItems().add("No track info");
+                }
+                else {
+                    mInfo.getItems().add(mediaFile.getMetadata().get("title"));
+                }
+
+
+                mInfo.selectionModelProperty().addListener((observable, oldVal, newVal) -> {
+                    System.out.println(newVal);
+                });
+                //mInfo.setOnMouseClicked(mouseEvent -> System.out.println(mInfo.selectionModelProperty().));
+                mInfo.setCellFactory(anonClass->{
+                    ListView
+                    System.out.println("ss");
+                    return null;
+                });
+                mInfo.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+                    @Override
+                    public ListCell<String> call(ListView<String> listView) {
+                        ListCell<String> cell = new ListCell<String>(){
+                            @Override
+                            protected void updateItem(String songName, boolean empty){
+                                super.updateItem(songName, empty);
+                            }
+                        };
+
+
+                        return null;
+                    }
+                });
+            }
+
             mFileDuration = mPlayer.getMedia().getDuration();
-//            progressionBar = new ProgressionBar("mediaProgressionBar", mPlayer, progressSlider,
-//                    progressShowLabel, mFileDuration);
+            progressionBar = new ProgressionBar("mediaProgressionBar", mPlayer, progressSlider,
+                    progressShowLabel, mFileDuration);
         });
     }
     //Dispose of media player
     private void disposeMediaPlayer(){
         mPlayer.dispose();
         active = false;
-        //System.out.println("dispose");
     }
     //Play media
     //Functionality for "play" button
@@ -168,9 +200,6 @@ public class Controller{
         if(active) {
             mPlayer.stop();
         }
-    }
-    public MediaPlayer getmPlayer() {
-        return mPlayer;
     }
 }
 

@@ -58,7 +58,7 @@ public class ProgressionBar {
         }
     }
 
-//    //Create seek bar and set listeners
+    //Create seek bar and set listeners
 //    public void createSeekBar(){
 //        try {
 //            //set up a change listener to be triggered on change in progressed (currentTime) time property
@@ -91,11 +91,6 @@ public class ProgressionBar {
 //            e.printStackTrace();
 //        }
 //    }
-
-
-
-
-
 
 
 }
